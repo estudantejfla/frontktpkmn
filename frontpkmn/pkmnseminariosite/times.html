@@ -1,109 +1,112 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Meus Times</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <video autoplay muted loop id="bg-video" class="background-video">
-    <source src="imagens/background.mp4" type="video/mp4">
-  </video>
+<script>
+const API = "https://backpkmn.onrender.com";
+const token = localStorage.getItem("token");
+const username = localStorage.getItem("username");
 
-  <div class="container">
-    <div class="navbar">
-      <a href="index.html">Login</a>
-      <a href="times.html">Meus Times</a>
-      <a href="criar_time.html">Criar Time</a>
-      <a href="publicos.html">Times Públicos</a>
-    </div>
+if (!token) {
+  alert("Você precisa estar logado");
+  window.location.href = "index.html";
+}
 
-    <h1>Bem-vindo, <span id="usuario"></span>!</h1>
-    <h2>Meus Times</h2>
+document.getElementById("usuario").textContent = username;
 
-    <div id="meusTimes"></div>
-    <button onclick="window.location.href='criar_time.html'">Criar Novo Time</button><br><br>
+let pokemonList = [];
 
-    <a href="#" onclick="logout()">Sair</a>
-  </div>
+async function loadPokemonList() {
+  for (let i = 1; i <= 151; i++) {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+    pokemonList.push(await res.json());
+  }
+  loadTeams();
+}
 
-  <script>
-    const API = "https://backpkmn.onrender.com";
-    const token = localStorage.getItem("token");
-    const username = localStorage.getItem("username");
+function getSprite(name) {
+  let p = pokemonList.find(p => p.name === name.toLowerCase());
+  return p ? p.sprites.front_default : "";
+}
 
-    if (!token) {
-      alert("Você precisa estar logado");
-      window.location.href = "index.html";
-    }
+async function loadTeams() {
+  const res = await fetch(`${API}/api/teams`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-    document.getElementById("usuario").textContent = username;
+  const teams = await res.json();
+  const div = document.getElementById("meusTimes");
 
-    let pokemonList = [];
+  if (teams.length === 0) {
+    div.innerHTML = "<p>Você ainda não criou nenhum time.</p>";
+    return;
+  }
 
-    async function loadPokemonList() {
-      for (let i = 1; i <= 151; i++) {
-        let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
-        let poke = await res.json();
-        pokemonList.push(poke);
+  div.innerHTML = "";
+
+  teams.forEach(t => {
+    const pokemons = JSON.parse(t.pokemons);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    let pokeHTML = pokemons.map(p => `
+      <div class="pokemon-item">
+        <img src="${getSprite(p)}" width="40">
+        <span>${p}</span>
+      </div>
+    `).join("");
+
+    card.innerHTML = `
+      <h3>${t.name}</h3>
+      <p>Status: ${t.isPublic ? "Público" : "Privado"}</p>
+      <div class="pokemon-container">${pokeHTML}</div>
+      <button onclick="editar(${t.id})">Editar</button>
+      <button onclick="excluir(${t.id})">Excluir</button>
+      ${t.isPublic 
+        ? `<button onclick="privar(${t.id})">Tornar Privado</button>`
+        : `<button onclick="publicar(${t.id})">Tornar Público</button>`
       }
-      loadTeams();
-    }
+    `;
 
-    function getSprite(name) {
-      let p = pokemonList.find(p => p.name === name.toLowerCase());
-      return p ? p.sprites.front_default : "";
-    }
+    div.appendChild(card);
+  });
+}
 
-    async function loadTeams() {
-      let res = await fetch(`${API}/api/teams`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+function editar(id) {
+  window.location.href = `criar_time.html?edit=${id}`;
+}
 
-      if (!res.ok) {
-        alert("Erro ao carregar times");
-        return;
-      }
+async function excluir(id) {
+  if (!confirm("Deseja excluir este time?")) return;
 
-      const teams = await res.json();
-      const div = document.getElementById("meusTimes");
+  await fetch(`${API}/api/teams/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-      if (teams.length === 0) {
-        div.innerHTML = "<p>Você ainda não criou nenhum time.</p>";
-        return;
-      }
+  loadTeams();
+}
 
-      div.innerHTML = "";
+async function publicar(id) {
+  await fetch(`${API}/api/teams/${id}/public`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-      teams.forEach(t => {
-        const pokemons = JSON.parse(t.pokemons); // vem salvo como JSON no backend
+  loadTeams();
+}
 
-        const card = document.createElement("div");
-        card.className = "card";
+async function privar(id) {
+  await fetch(`${API}/api/teams/${id}/private`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-        let pokeHTML = pokemons.map(p => `
-          <div class="pokemon-item">
-            <img src="${getSprite(p)}" width="40">
-            <span>${p}</span>
-          </div>
-        `).join("");
+  loadTeams();
+}
 
-        card.innerHTML = `
-          <strong>${t.name}</strong><br>
-          <div class="pokemon-container">${pokeHTML}</div>
-        `;
+function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("username");
+  window.location.href = "index.html";
+}
 
-        div.appendChild(card);
-      });
-    }
-
-    function logout() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("username");
-      window.location.href = "index.html";
-    }
-
-    loadPokemonList();
-  </script>
-</body>
-</html>
+loadPokemonList();
+</script>
