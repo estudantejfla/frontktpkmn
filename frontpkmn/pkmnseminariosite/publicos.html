@@ -27,7 +27,6 @@
   <script>
     const API = "https://backpkmn.onrender.com";
     const token = localStorage.getItem("token");
-    const username = localStorage.getItem("username");
 
     if (!token) {
       alert("Você precisa estar logado para ver times públicos");
@@ -36,6 +35,9 @@
 
     let pokemonList = [];
 
+    // ---------------------------
+    // 1. Carregar sprites
+    // ---------------------------
     async function loadPokemonList() {
       for (let i = 1; i <= 151; i++) {
         let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
@@ -45,16 +47,20 @@
       loadPublicTeams();
     }
 
-    function getPokemonSprite(name) {
+    function getSprite(name) {
       let p = pokemonList.find(p => p.name === name.toLowerCase());
       return p ? p.sprites.front_default : "";
     }
 
+    // ---------------------------
+    // 2. Carregar times públicos do backend real
+    // ---------------------------
     async function loadPublicTeams() {
       let res = await fetch(`${API}/api/public`);
       let times = await res.json();
 
       let div = document.getElementById("lista");
+
       if (times.length === 0) {
         div.innerHTML = "<p>Nenhum time público ainda.</p>";
         return;
@@ -62,26 +68,27 @@
 
       div.innerHTML = "";
 
+      // Para cada time
       times.forEach(t => {
         const pokemons = JSON.parse(t.pokemons);
 
-        let box = document.createElement("div");
-        box.className = "card time-card";
-
         let pokeHTML = pokemons.map(p => `
           <div class="pokemon-item">
-            <img src="${getPokemonSprite(p)}" width="60">
+            <img src="${getSprite(p)}" width="60">
             <span>${p}</span>
           </div>
         `).join("");
 
-        box.innerHTML = `
+        let card = document.createElement("div");
+        card.className = "card time-card";
+
+        card.innerHTML = `
           <h3>${t.name}</h3>
-          <p class="time-owner">Por: ${t.ownerId}</p>
+          <p class="time-owner">Por: <strong>${t.owner.username}</strong></p>
           <div class="pokemon-grid">${pokeHTML}</div>
         `;
 
-        div.appendChild(box);
+        div.appendChild(card);
       });
     }
 
