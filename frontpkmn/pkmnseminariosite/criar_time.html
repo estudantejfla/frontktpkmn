@@ -18,7 +18,7 @@
       <a href="publicos.html">Times Públicos</a>
     </div>
 
-    <h1>Criar/Editar Time</h1>
+    <h1>Criar Time</h1>
     <p>Usuário: <span id="usuario"></span></p>
     <input id="nomeTime" placeholder="Nome do Time"><br>
 
@@ -35,31 +35,23 @@
 
     <button onclick="salvarTime()">Salvar Time</button><br><br>
     <button onclick="limparTime()" style="background-color:#f44336;">Limpar Time</button><br><br>
+
     <a href="times.html">Voltar</a>
   </div>
 
 <script>
-let user = localStorage.getItem("logado");
-let contas = JSON.parse(localStorage.getItem("contas")) || {};
-if (!user || !contas[user]) {
+const API = "https://backpkmn.onrender.com";
+const token = localStorage.getItem("token");
+const username = localStorage.getItem("username");
+
+if (!token) {
   alert("Você precisa estar logado");
   window.location.href = "index.html";
 }
-document.getElementById("usuario").textContent = user;
+
+document.getElementById("usuario").textContent = username;
 
 let slots = [];
-let editingIndex = -1;
-
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.has('edit')) {
-  editingIndex = parseInt(urlParams.get('edit'));
-  let time = contas[user].times[editingIndex];
-  if (time) {
-    document.getElementById("nomeTime").value = time.nome;
-    slots = [...time.pokemons];
-  }
-}
-
 let pokemonList = [];
 
 async function loadPokemonList() {
@@ -149,7 +141,7 @@ function removerPokemon(i) {
   mostrarSlots();
 }
 
-function salvarTime() {
+async function salvarTime() {
   let nome = document.getElementById("nomeTime").value;
   let pokemons = slots.filter(p => p);
 
@@ -158,12 +150,26 @@ function salvarTime() {
     return;
   }
 
-  let time = { nome, pokemons };
+  let body = {
+    name: nome,
+    pokemons: pokemons,
+    isPublic: false
+  };
 
-  if (editingIndex >= 0) contas[user].times[editingIndex] = time;
-  else contas[user].times.push(time);
+  let res = await fetch(`${API}/api/teams`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
 
-  localStorage.setItem("contas", JSON.stringify(contas));
+  if (!res.ok) {
+    alert("Erro ao salvar time");
+    return;
+  }
+
   alert("Time salvo!");
   window.location.href = "times.html";
 }
