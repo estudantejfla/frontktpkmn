@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Criar Time</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <video autoplay muted loop id="bg-video" class="background-video">
+    <source src="imagens/background.mp4" type="video/mp4">
+  </video>
+
+  <div class="container">
+    <div class="navbar">
+      <a href="index.html">Login</a>
+      <a href="times.html">Meus Times</a>
+      <a href="criar_time.html">Criar Time</a>
+      <a href="publicos.html">Times Públicos</a>
+    </div>
+
+    <h1>Criar/Editar Time</h1>
+    <p>Usuário: <span id="usuario"></span></p>
+    <input id="nomeTime" placeholder="Nome do Time"><br>
+
+    <h3>Seu Time</h3>
+    <div id="slots" class="grid"></div>
+
+    <div id="pokemonModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <input type="text" id="pokemonSearch" placeholder="Buscar Pokémon..." oninput="buscarPokemon()">
+        <div id="pokemonList" class="grid"></div>
+      </div>
+    </div>
+
+    <button onclick="salvarTime()">Salvar Time</button><br><br>
+    <button onclick="limparTime()" style="background-color:#f44336;">Limpar Time</button><br><br>
+    <a href="times.html">Voltar</a>
+  </div>
+
+<script>
+let user = localStorage.getItem("logado");
+let contas = JSON.parse(localStorage.getItem("contas")) || {};
+if (!user || !contas[user]) {
+  alert("Você precisa estar logado");
+  window.location.href = "index.html";
+}
+document.getElementById("usuario").textContent = user;
+
+let slots = [];
+let editingIndex = -1;
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('edit')) {
+  editingIndex = parseInt(urlParams.get('edit'));
+  let time = contas[user].times[editingIndex];
+  if (time) {
+    document.getElementById("nomeTime").value = time.nome;
+    slots = [...time.pokemons];
+  }
+}
+
+let pokemonList = [];
+
+async function loadPokemonList() {
+  for (let i = 1; i <= 151; i++) {
+    let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+    let poke = await res.json();
+    pokemonList.push(poke);
+  }
+  carregarPokemons();
+  mostrarSlots();
+}
+
+function getSprite(name) {
+  let p = pokemonList.find(p => p.name === name.toLowerCase());
+  return p ? p.sprites.front_default : "";
+}
+
+function mostrarSlots() {
+  let container = document.getElementById("slots");
+  container.innerHTML = "";
+
+  for (let i = 0; i < 6; i++) {
+    let div = document.createElement("div");
+    div.className = "card";
+
+    if (slots[i]) {
+      div.innerHTML = `
+        <img src="${getSprite(slots[i])}" width="60">
+        <p>${slots[i]}</p>
+        <button onclick="removerPokemon(${i})">Remover</button>
+      `;
+    } else {
+      div.innerHTML = `<button onclick="abrirModal(${i})">Adicionar Pokémon</button>`;
+    }
+
+    container.appendChild(div);
+  }
+}
+
+let modal = document.getElementById("pokemonModal");
+let currentSlot = 0;
+
+function abrirModal(i) {
+  currentSlot = i;
+  modal.style.display = "block";
+}
+
+function fecharModal() {
+  modal.style.display = "none";
+}
+
+document.querySelector(".close").onclick = fecharModal;
+window.onclick = e => { if (e.target == modal) fecharModal(); };
+
+function carregarPokemons() {
+  let container = document.getElementById("pokemonList");
+  container.innerHTML = "";
+
+  pokemonList.forEach(poke => {
+    let div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <img src="${poke.sprites.front_default}" width="60">
+      <p>${poke.name}</p>
+      <button onclick="selecionarPokemon('${poke.name}')">Adicionar</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function buscarPokemon() {
+  let termo = document.getElementById("pokemonSearch").value.toLowerCase();
+  document.querySelectorAll("#pokemonList .card").forEach(card => {
+    let nome = card.querySelector("p").textContent.toLowerCase();
+    card.style.display = nome.includes(termo) ? "block" : "none";
+  });
+}
+
+function selecionarPokemon(nome) {
+  slots[currentSlot] = nome;
+  mostrarSlots();
+  fecharModal();
+}
+
+function removerPokemon(i) {
+  slots[i] = null;
+  mostrarSlots();
+}
+
+function salvarTime() {
+  let nome = document.getElementById("nomeTime").value;
+  let pokemons = slots.filter(p => p);
+
+  if (!nome || pokemons.length === 0) {
+    alert("Nome e pelo menos 1 Pokémon são obrigatórios");
+    return;
+  }
+
+  let time = { nome, pokemons };
+
+  if (editingIndex >= 0) contas[user].times[editingIndex] = time;
+  else contas[user].times.push(time);
+
+  localStorage.setItem("contas", JSON.stringify(contas));
+  alert("Time salvo!");
+  window.location.href = "times.html";
+}
+
+function limparTime() {
+  slots = [];
+  document.getElementById("nomeTime").value = "";
+  mostrarSlots();
+}
+
+loadPokemonList();
+</script>
+</body>
+</html>
