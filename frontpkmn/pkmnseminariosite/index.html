@@ -9,15 +9,17 @@
   <video autoplay muted loop id="bg-video" class="background-video">
     <source src="imagens/background.mp4" type="video/mp4">
   </video>
+
   <div class="container">
-    
     <h1>Login Pokémon</h1>
+
     <div class="box">
       <h2>Entrar</h2>
       <input id="loginUser" placeholder="Usuário"><br>
       <input id="loginPass" type="password" placeholder="Senha"><br>
       <button onclick="login()">Entrar</button>
     </div>
+
     <div class="box">
       <h2>Criar Conta</h2>
       <input id="newUser" placeholder="Novo usuário"><br>
@@ -27,27 +29,57 @@
   </div>
 
   <script>
-    function criarConta() {
-      let user = document.getElementById("newUser").value;
-      let pass = document.getElementById("newPass").value;
-      if (!user || !pass) return alert("Preencha usuário e senha");
-      let contas = JSON.parse(localStorage.getItem("contas")) || {};
-      if (contas[user]) return alert("Usuário já existe");
-      contas[user] = { senha: pass, times: [] };
-      localStorage.setItem("contas", JSON.stringify(contas));
-      alert("Conta criada!");
+    const API = "https://backpkmn.onrender.com";
+
+    async function criarConta() {
+      const username = document.getElementById("newUser").value.trim();
+      const password = document.getElementById("newPass").value.trim();
+
+      if (!username || !password) return alert("Preencha usuário e senha");
+
+      const res = await fetch(`${API}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.error === "username_taken") return alert("Usuário já existe");
+        return alert("Erro ao criar conta");
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", data.user.username);
+
+      window.location.href = "times.html";
     }
 
-    function login() {
-      let user = document.getElementById("loginUser").value;
-      let pass = document.getElementById("loginPass").value;
-      let contas = JSON.parse(localStorage.getItem("contas")) || {};
-      if (contas[user] && contas[user].senha === pass) {
-        localStorage.setItem("logado", user);
-        window.location.href = "times.html";
-      } else {
-        alert("Usuário ou senha incorretos");
+    async function login() {
+      const username = document.getElementById("loginUser").value.trim();
+      const password = document.getElementById("loginPass").value.trim();
+
+      if (!username || !password) return alert("Preencha usuário e senha");
+
+      const res = await fetch(`${API}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.error === "invalid_credentials")
+          return alert("Usuário ou senha incorretos");
+        return alert("Erro ao fazer login");
       }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", data.user.username);
+
+      window.location.href = "times.html";
     }
   </script>
 </body>
