@@ -20,14 +20,16 @@
 
     <h1>Criar Time</h1>
     <p>Usuário: <span id="usuario"></span></p>
+
     <input id="nomeTime" placeholder="Nome do Time"><br>
 
-    <h3>Seu Time</h3>
+    <h3>Seu Time (6 Pokémon máximo)</h3>
     <div id="slots" class="grid"></div>
 
     <div id="pokemonModal" class="modal">
       <div class="modal-content">
         <span class="close">&times;</span>
+
         <input type="text" id="pokemonSearch" placeholder="Buscar Pokémon..." oninput="buscarPokemon()">
         <div id="pokemonList" class="grid"></div>
       </div>
@@ -51,14 +53,14 @@ if (!token) {
 
 document.getElementById("usuario").textContent = username;
 
-let slots = [];
+let slots = []; 
 let pokemonList = [];
 
 async function loadPokemonList() {
   for (let i = 1; i <= 151; i++) {
     let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
-    let poke = await res.json();
-    pokemonList.push(poke);
+    let data = await res.json();
+    pokemonList.push(data);
   }
   carregarPokemons();
   mostrarSlots();
@@ -91,8 +93,12 @@ function mostrarSlots() {
   }
 }
 
-let modal = document.getElementById("pokemonModal");
+let modal = null;
 let currentSlot = 0;
+
+window.onload = () => {
+  modal = document.getElementById("pokemonModal");
+};
 
 function abrirModal(i) {
   currentSlot = i;
@@ -104,7 +110,10 @@ function fecharModal() {
 }
 
 document.querySelector(".close").onclick = fecharModal;
-window.onclick = e => { if (e.target == modal) fecharModal(); };
+
+window.onclick = (e) => {
+  if (e.target == modal) fecharModal();
+};
 
 function carregarPokemons() {
   let container = document.getElementById("pokemonList");
@@ -113,6 +122,7 @@ function carregarPokemons() {
   pokemonList.forEach(poke => {
     let div = document.createElement("div");
     div.className = "card";
+
     div.innerHTML = `
       <img src="${poke.sprites.front_default}" width="60">
       <p>${poke.name}</p>
@@ -130,8 +140,8 @@ function buscarPokemon() {
   });
 }
 
-function selecionarPokemon(nome) {
-  slots[currentSlot] = nome;
+function selecionarPokemon(name) {
+  slots[currentSlot] = name;
   mostrarSlots();
   fecharModal();
 }
@@ -142,21 +152,21 @@ function removerPokemon(i) {
 }
 
 async function salvarTime() {
-  let nome = document.getElementById("nomeTime").value;
-  let pokemons = slots.filter(p => p);
+  const name = document.getElementById("nomeTime").value;
+  const pokemons = slots.filter(p => p);
 
-  if (!nome || pokemons.length === 0) {
-    alert("Nome e pelo menos 1 Pokémon são obrigatórios");
+  if (!name || pokemons.length === 0) {
+    alert("O time precisa ter nome e pelo menos 1 Pokémon!");
     return;
   }
 
-  let body = {
-    name: nome,
-    pokemons: pokemons,
+  const body = {
+    name,
+    pokemons,
     isPublic: false
   };
 
-  let res = await fetch(`${API}/api/teams`, {
+  const res = await fetch(`${API}/api/teams`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -166,11 +176,11 @@ async function salvarTime() {
   });
 
   if (!res.ok) {
-    alert("Erro ao salvar time");
+    alert("Erro ao salvar time!");
     return;
   }
 
-  alert("Time salvo!");
+  alert("Time salvo com sucesso!");
   window.location.href = "times.html";
 }
 
@@ -182,5 +192,6 @@ function limparTime() {
 
 loadPokemonList();
 </script>
+
 </body>
 </html>
