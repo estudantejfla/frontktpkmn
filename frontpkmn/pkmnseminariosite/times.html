@@ -1,3 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Meus Times</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <video autoplay muted loop id="bg-video" class="background-video">
+    <source src="imagens/background.mp4" type="video/mp4">
+  </video>
+
+  <div class="container">
+    <div class="navbar">
+      <a href="index.html">Login</a>
+      <a href="times.html">Meus Times</a>
+      <a href="criar_time.html">Criar Time</a>
+      <a href="publicos.html">Times Públicos</a>
+    </div>
+
+    <h1>Bem-vindo, <span id="usuario"></span>!</h1>
+    <h2>Meus Times</h2>
+
+    <div id="meusTimes"></div>
+    <button onclick="window.location.href='criar_time.html'">Criar Novo Time</button><br><br>
+
+    <a href="#" onclick="logout()">Sair</a>
+  </div>
+
 <script>
 const API = "https://backpkmn.onrender.com";
 const token = localStorage.getItem("token");
@@ -29,6 +58,11 @@ async function loadTeams() {
   const res = await fetch(`${API}/api/teams`, {
     headers: { Authorization: `Bearer ${token}` }
   });
+
+  if (!res.ok) {
+    alert("Erro ao carregar times");
+    return;
+  }
 
   const teams = await res.json();
   const div = document.getElementById("meusTimes");
@@ -110,3 +144,6 @@ function logout() {
 
 loadPokemonList();
 </script>
+
+</body>
+</html>
