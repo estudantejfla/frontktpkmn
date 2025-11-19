@@ -24,62 +24,65 @@
       <h2>Criar Conta</h2>
       <input id="newUser" placeholder="Novo usuário"><br>
       <input id="newPass" type="password" placeholder="Nova senha"><br>
-      <button onclick="criarConta()">Criar Conta</button>
+      <button onclick="register()">Criar Conta</button>
     </div>
   </div>
 
   <script>
     const API = "https://backpkmn.onrender.com";
 
-    async function criarConta() {
-      const username = document.getElementById("newUser").value.trim();
-      const password = document.getElementById("newPass").value.trim();
+    async function register() {
+      const username = document.getElementById("newUser").value;
+      const password = document.getElementById("newPass").value;
 
-      if (!username || !password) return alert("Preencha usuário e senha");
+      if (!username || !password) return alert("Preencha todos os campos");
 
-      const res = await fetch(`${API}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
+      try {
+        const res = await fetch(`${API}/api/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (!res.ok) {
-        if (data.error === "username_taken") return alert("Usuário já existe");
-        return alert("Erro ao criar conta");
+        if (!res.ok) {
+          if (data.error === "username_taken") return alert("Usuário já existe!");
+          return alert("Erro ao criar conta");
+        }
+
+        alert("Conta criada! Faça login.");
+      } catch (err) {
+        alert("Erro de conexão");
       }
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", data.user.username);
-
-      window.location.href = "times.html";
     }
 
     async function login() {
-      const username = document.getElementById("loginUser").value.trim();
-      const password = document.getElementById("loginPass").value.trim();
+      const username = document.getElementById("loginUser").value;
+      const password = document.getElementById("loginPass").value;
 
-      if (!username || !password) return alert("Preencha usuário e senha");
+      if (!username || !password) return alert("Preencha todos os campos");
 
-      const res = await fetch(`${API}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
+      try {
+        const res = await fetch(`${API}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (!res.ok) {
-        if (data.error === "invalid_credentials")
+        if (!res.ok) {
           return alert("Usuário ou senha incorretos");
-        return alert("Erro ao fazer login");
+        }
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("username", data.user.username);
+
+        window.location.href = "times.html";
+      } catch (err) {
+        alert("Erro de conexão");
       }
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", data.user.username);
-
-      window.location.href = "times.html";
     }
   </script>
 </body>
